@@ -2,11 +2,7 @@ package mussatto.lab
 
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.asCoroutineDispatcher
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import org.junit.Test
 import java.time.Instant.now
 import java.util.concurrent.Executors
@@ -23,6 +19,7 @@ class CoroutineLabTest {
                 launch(context) {
                     val time = measureTimeMillis {
                         delay(3000) // this frees up the thread to other tasks
+                        // Thread.sleep(3000) // this does NOT free up the thread to other tasks
                         println("Finished $it - ${now()}")
                     }
 
@@ -31,6 +28,25 @@ class CoroutineLabTest {
             }
         }
         context.close()
+    }
+
+    @Test
+    fun `Should launch from main context`(){
+
+
+        val list = listOf("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O")
+        val context = Executors.newFixedThreadPool(1).asCoroutineDispatcher()
+        list.forEach {
+            GlobalScope.launch(context) {
+                val time = measureTimeMillis {
+                    delay(3000) // this frees up the thread to other tasks
+                    // Thread.sleep(3000) // this does NOT free up the thread to other tasks
+                    println("Finished $it - ${now()}")
+                }
+
+                println("$it took $time milliseconds")
+            }
+        }
     }
 
     @Test
@@ -62,28 +78,34 @@ class CoroutineLabTest {
     @Test
     fun `Should create one coroutine per item in list with delay with suspend`() {
         runBlocking {
-            doSomething()
+            processListWithCoroutineScope()
         }
     }
 
-    suspend fun doSomething() {
+    suspend fun processListWithCoroutineScope() {
         val list = listOf("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O")
-        val context = Executors.newFixedThreadPool(1).asCoroutineDispatcher()
-        val job = GlobalScope.launch {
-            list.forEach {
-                launch(context) {
-                    val time = measureTimeMillis {
-                        delay(3000) // this frees up the thread to other tasks
-                        println("Finished $it - ${now()}")
-                    }
+        val context = Executors.newFixedThreadPool(3).asCoroutineDispatcher()
 
-                    println("$it took $time milliseconds")
+        coroutineScope {
+
+            val job = launch {
+                list.forEach {
+                    launch(context) {
+                        val time = measureTimeMillis {
+                            delay(3000) // this frees up the thread to other tasks
+                            println("Finished $it - ${now()}")
+                        }
+
+                        println("$it took $time milliseconds")
+                    }
                 }
             }
+
+            job.join()
         }
 
         context.close()
-        job.join()
+
         println("Exit! But only after everything else finished.")
     }
 
