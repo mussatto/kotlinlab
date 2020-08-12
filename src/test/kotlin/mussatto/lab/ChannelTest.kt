@@ -8,12 +8,10 @@ class ChannelTest {
 
     @Test
     fun `Should publish stuff to channel and process it`(){
-
         val list = listOf("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O")
         val channel = Channel<String>(5)
         // wait for the whole test to finish
         runBlocking {
-
             coroutineScope{
                 val processorJob = createProcessorJob(channel)
                 val senderJobs = sendListToChannel(list, channel)
